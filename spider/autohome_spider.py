@@ -94,7 +94,7 @@ def deal_the_page(spider1):
 
 
 # 通过一个车的车辆编码，获取相关的所有口碑数据
-def get_review_data(car_code, spider):
+def get_review_data(car_code, spider, data_path):
     #爬取第一页口碑，第一页的链接跟其他的不一样，所以分开
     spider.get('http://k.autohome.com.cn/' + car_code + '/###')
     deal_the_page(spider)
@@ -108,6 +108,10 @@ def get_review_data(car_code, spider):
     page_count = 1
     file_count = 1
     print('spider the ' + str(int(loop_count)) + ' page, total ' + str(int(page_size)) + ' pages')
+    #判断数据存储文件夹是否存在，不存在创建
+    isExists = os.path.exists(data_path)
+    if not isExists:
+        os.makedirs(data_path)
     for a in range(2, int(page_size) + 1):
         url = 'http://k.autohome.com.cn/' + car_code + '/index_' + str(a) + '.html###'
         time.sleep(10)
@@ -117,20 +121,22 @@ def get_review_data(car_code, spider):
         get_comments_in_page(soup1, total_comment_list)
         loop_count += 1
         page_count += 1
-        print('spider the ' + str(int(loop_count)) + ' page, total ' + str(int(page_size)) + ' pages')
-        if page_count == 2:
-            file_path = 'C:/Develop/data/spider_data/' + car_code + '/'
-            isExists = os.path.exists(file_path)
-            if not isExists:
-                os.makedirs(file_path)
-            file_name = file_path + car_code + '_' + str(file_count) + '.json'
+        print('spider the ' + str(int(loop_count)) + ' page finished, total ' + str(int(page_size)) + ' pages')
+        #判断多少页开始分文件存
+        if page_count == 5:
+            file_name = data_path + car_code + '_' + str(file_count) + '.json'
             file = open(file_name, 'w', encoding="utf-8")
             json.dump(total_comment_list, file, ensure_ascii=False)
             total_comment_list = list()
             file.close()
             page_count = 0
             file_count += 1
-    return total_comment_list
+    if len(total_comment_list):
+        file_name = data_path + car_code + '_' + str(file_count) + '.json'
+        file = open(file_name, 'w', encoding="utf-8")
+        json.dump(total_comment_list, file, ensure_ascii=False)
+        total_comment_list = list()
+        file.close()
 
 
 # 通过一个车的车辆编码，获取相关的所有论坛评论数据
@@ -198,15 +204,12 @@ car_code_list = ['528']
 #car_code_list = ['496','3171','78','110','117','164','634']
 # 获取并存储数据，论坛数据会被存储在car_code_luntan.json中，评价数据会被存储在car_code.json中
 for car_code in car_code_list:
-    print('begin spider car: ' + car_code)
+    print('___________________begin spider car: ' + car_code)
 
     #爬取口碑数据
-    review_data = get_review_data(car_code=car_code, spider=spider)
-    print('Finish analyzing the review data...')
-    file_name = 'C:/Develop/data/spider_data/' + car_code + '.json'
-    file = open(file_name, 'w', encoding="utf-8")
-    json.dump(review_data, file, ensure_ascii=False)
-    file.close()
+    data_path = 'C:/Develop/data/spider_data/' + car_code + '/'
+    get_review_data(car_code=car_code, spider=spider, data_path=data_path)
+    print('spider car: ' + car_code + ' finished.')
 
 """
     #爬取论坛数据
