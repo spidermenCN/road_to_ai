@@ -200,8 +200,8 @@ login.click()
 time.sleep(5)
 print('login success.')
 # 自己可以更改为自己感兴趣的汽车编号，这里65是宝马5系，197是奔驰E级，仅作测试和参考
-car_code_list = ['528']
-#car_code_list = ['496','3171','78','110','117','164','634']
+#car_code_list = ['528']
+car_code_list = ['528', '496','3171','78','110','117','164','634']
 # 获取并存储数据，论坛数据会被存储在car_code_luntan.json中，评价数据会被存储在car_code.json中
 for car_code in car_code_list:
     print('___________________begin spider car: ' + car_code)
