@@ -140,46 +140,59 @@ def get_review_data(car_code, spider, data_path):
 
 
 # 通过一个车的车辆编码，获取相关的所有论坛评论数据
-def get_luntan_data(car_code, spider):
-    url_list = list()
+def get_luntan_data(car_code, spider, data_path):
     luntan_list = list()
-    for a in range(1, 11):
+    spider.get('http://club.autohome.com.cn/bbs/forum-c-' + car_code + '-' + str(1) + '.html')
+    soup = BeautifulSoup(spider.page_source)
+    page_size = soup.find('span', class_='fr').text.strip('共').strip('页')
+    loop_count = 0
+    # 分文件的页数
+    page_count = 0
+    file_count = 1
+    for a in range(1, int(page_size) + 1):
+        loop_count += 1
+        page_count += 1
         spider.get('http://club.autohome.com.cn/bbs/forum-c-' + car_code + '-' + str(a) + '.html')
         soup = BeautifulSoup(spider.page_source)
+        page_size = soup.find('span', class_='fr').text.strip('共').strip('页')
         link_list = soup.find_all('a', class_='a_topic')
         for link in link_list:
-            url_list.append('http://club.autohome.com.cn/' + link['href'])
-    i = 0
-    for url in url_list:
-        i += 1
-        print(i)
-        try:
-            review = dict()
-            spider.get(url)
-            soup = BeautifulSoup(spider.page_source)
-            content = soup.find('div', class_='conttxt')
-            wanted_list = content.find_all('div', class_='tz-paragraph')
-            total_content = ''
-            for wenzi in wanted_list:
-                if len(wenzi.text.replace('\n', '').replace(' ', '')) > 0:
-                    print(wenzi)
-                    total_content += wenzi.text.replace('\n', '').replace(' ', '')
-                else:
-                    print('empty')
-            review['website'] = url
-            review['content'] = total_content
-            luntan_list.append(review)
-        except:
-            print('the content is not normal')
-    final_list = list()
-    for comment in luntan_list:
-        new_content = comment['content'].replace('\n', '').replace(' ', '')
-        if new_content == "":
-            print('no use')
-        else:
-            print('save')
-            final_list.append(comment)
-    return final_list
+            #url_list.append('http://club.autohome.com.cn/' + link['href'])
+            url = 'http://club.autohome.com.cn/' + link['href']
+            try:
+                review = dict()
+                spider.get(url)
+                soup = BeautifulSoup(spider.page_source)
+                content = soup.find('div', class_='conttxt')
+                wanted_list = content.find_all('div', class_='tz-paragraph')
+                total_content = ''
+                for wenzi in wanted_list:
+                    if len(wenzi.text.replace('\n', '').replace(' ', '')) > 0:
+                        total_content += wenzi.text.replace('\n', '').replace(' ', '')
+                    else:
+                        print('content empty.')
+                if total_content == "":
+                    continue
+                review['website'] = url
+                review['content'] = total_content
+                luntan_list.append(review)
+            except:
+                print('the content is not normal')
+        print('spider the ' + str(int(loop_count)) + ' page finished, total ' + str(int(page_size)) + ' pages')
+        if page_count ==  1:
+            file_name = data_path + car_code + '_' + str(file_count) + '_luntan.json'
+            file = open(file_name, 'w', encoding="utf-8")
+            json.dump(luntan_list, file, ensure_ascii=False)
+            luntan_list = list()
+            file.close()
+            page_count = 0
+            file_count += 1
+    if len(luntan_list):
+        file_name = data_path + car_code + '_' + str(file_count) + '_luntan.json'
+        file = open(file_name, 'w', encoding="utf-8")
+        json.dump(luntan_list, file, ensure_ascii=False)
+        luntan_list = list()
+        file.close()
 
 
 # 加载 Webdriver
@@ -207,16 +220,13 @@ for car_code in car_code_list:
     print('___________________begin spider car: ' + car_code)
 
     #爬取口碑数据
+    #data_path = 'C:/Develop/data/spider_data/' + car_code + '/'
+    #get_review_data(car_code=car_code, spider=spider, data_path=data_path)
+    #print('spider car: ' + car_code + ' finished.')
+
+
+    #爬取论坛数据
     data_path = 'C:/Develop/data/spider_data/' + car_code + '/'
-    get_review_data(car_code=car_code, spider=spider, data_path=data_path)
+    get_luntan_data(car_code=car_code, spider=spider, data_path=data_path)
     print('spider car: ' + car_code + ' finished.')
 
-"""
-    #爬取论坛数据
-    luntan_data = get_luntan_data(car_code=car_code, spider=spider)
-    print('Finish analyzing the luntan data...')
-    file_name = car_code + '_luntan.json'
-    file = open(file_name, 'w', encoding="utf-8")
-    json.dump(luntan_data, file, ensure_ascii=False)
-    file.close()
-"""
